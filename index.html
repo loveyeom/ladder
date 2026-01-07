@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>VIP GOLDEN LADDER DYNAMIC</title>
+    <style>
+        :root {
+            --gold: #ffd700;
+            --gold-glow: #ffae00;
+            --dark-bg: #0a0a0a;
+            --neon-red: #ff3e3e;
+            --neon-blue: #00d2ff;
+        }
+        body {
+            background-color: var(--dark-bg);
+            color: white;
+            font-family: 'Pretendard', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+            background: radial-gradient(circle, #222 0%, #000 100%);
+        }
+        .app-card {
+            width: 380px;
+            background: #1a1a1a;
+            border: 3px solid var(--gold);
+            border-radius: 25px;
+            padding: 20px;
+            box-shadow: 0 0 50px rgba(255, 215, 0, 0.4);
+            text-align: center;
+            position: relative;
+        }
+        .header {
+            font-size: 26px; font-weight: 900; color: var(--gold);
+            text-shadow: 0 0 15px var(--gold-glow); margin-bottom: 10px; font-style: italic;
+        }
+        .counter {
+            background: linear-gradient(90deg, #333, #111);
+            padding: 10px; border-radius: 10px; font-weight: bold;
+            border: 1px solid #444; margin-bottom: 20px;
+        }
+        #count-num { color: var(--gold); font-size: 28px; text-shadow: 0 0 10px var(--gold); }
+
+        .controls-top {
+            display: flex; justify-content: space-between; margin-bottom: 15px; padding: 0 20px;
+        }
+        .btn-start {
+            width: 130px; padding: 15px; border-radius: 15px;
+            border: 2px solid rgba(255,255,255,0.3); color: white;
+            font-size: 22px; font-weight: bold; cursor: pointer; transition: 0.2s;
+        }
+        .btn-odd { background: linear-gradient(to bottom, #e74c3c, #c0392b); box-shadow: 0 5px 15px rgba(231, 76, 60, 0.5); }
+        .btn-even { background: linear-gradient(to bottom, #3498db, #2980b9); box-shadow: 0 5px 15px rgba(52, 152, 219, 0.5); }
+        .btn-start:active { transform: scale(0.9); }
+        .btn-start:disabled { opacity: 0.3; filter: grayscale(1); }
+
+        .game-view {
+            position: relative; width: 300px; height: 380px;
+            margin: 0 auto; background: rgba(0,0,0,0.9);
+            border-radius: 15px; border: 1px solid #333; overflow: hidden;
+        }
+
+        #mystery-mask {
+            position: absolute; top: 90px; left: 10px; width: 280px; height: 200px;
+            background: #000; border: 2px solid #222; z-index: 10;
+            display: flex; align-items: center; justify-content: center;
+            color: #333; font-size: 80px; font-weight: bold; transition: opacity 0.4s;
+        }
+
+        .results-bottom {
+            display: flex; justify-content: space-between; margin-top: 20px; padding: 0 20px;
+        }
+        .res-label {
+            width: 110px; padding: 12px; border-radius: 10px;
+            background: #222; font-weight: bold; font-size: 24px; border: 1px solid #444;
+        }
+        .res-odd-label { color: var(--neon-red); }
+        .res-even-label { color: var(--neon-blue); }
+
+        .modal {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.95); z-index: 100; justify-content: center; align-items: center;
+            backdrop-filter: blur(10px);
+        }
+        .modal-content {
+            width: 85%; padding: 40px 10px; border-radius: 30px; text-align: center;
+            animation: pop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        @keyframes pop { from { transform: scale(0.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        
+        .win { border: 4px solid var(--gold); background: linear-gradient(135deg, #222, #000); box-shadow: 0 0 50px var(--gold); }
+        .lose { border: 4px solid #555; background: linear-gradient(135deg, #333, #111); box-shadow: 0 0 30px rgba(255,255,255,0.1); }
+        .event { border: 4px solid #2ecc71; background: linear-gradient(135deg, #1b3325, #000); box-shadow: 0 0 40px #2ecc71; }
+
+        .modal-h { font-size: 38px; margin-bottom: 10px; font-weight: 900; }
+        .money { font-size: 42px; font-weight: 900; display: block; margin: 20px 0; }
+        .get-btn {
+            padding: 15px 60px; font-size: 24px; font-weight: bold; border-radius: 50px; cursor: pointer; border: none;
+        }
+    </style>
+</head>
+<body>
+
+<div class="app-card">
+    <div class="header">VIP GOLDEN LADDER</div>
+    <div class="counter"><span id="count-num">10</span>회 이용 가능</div>
+
+    <div class="controls-top">
+        <button id="btnOdd" class="btn-start btn-odd" onclick="handleStart('odd')">홀</button>
+        <button id="btnEven" class="btn-start btn-even" onclick="handleStart('even')">짝</button>
+    </div>
+
+    <div class="game-view">
+        <canvas id="ladderCanvas" width="300" height="380"></canvas>
+        <div id="mystery-mask">?</div>
+    </div>
+
+    <div class="results-bottom">
+        <div class="res-label res-odd-label">홀</div>
+        <div class="res-label res-even-label">짝</div>
+    </div>
+</div>
+
+<div id="modalWin" class="modal"><div class="modal-content win"><h2 class="modal-h" style="color:var(--gold)">JACKPOT!</h2><p>1등 당첨을 축하합니다!</p><span class="money" style="color:var(--neon-red)">500,000,000원</span><button class="get-btn" style="background:var(--gold)" onclick="closeModal()">받기</button></div></div>
+<div id="modalLose" class="modal"><div class="modal-content lose"><h2 class="modal-h" style="color:#bdc3c7">꽝!</h2><p>다음에 다시 도전하세요!</p><span class="money" style="color:#bdc3c7">(1등 5억 원)</span><button class="get-btn" style="background:#666;color:white" onclick="closeModal()">다시 하기</button></div></div>
+<div id="modalEvent" class="modal"><div class="modal-content event"><h2 class="modal-h" style="color:#2ecc71">축하합니다!</h2><p>비밀 이벤트 당첨!</p><span class="money" style="color:#2ecc71">200,000원 당첨!</span><button class="get-btn" style="background:#2ecc71;color:white" onclick="closeModal()">받기</button></div></div>
+
+<script>
+    const canvas = document.getElementById('ladderCanvas');
+    const ctx = canvas.getContext('2d');
+    const mask = document.getElementById('mystery-mask');
+    const countDisplay = document.getElementById('count-num');
+    
+    let currentCount = 10;
+    let isPlaying = false;
+    let ball = { x: 70, y: 0, targetX: 70 };
+    let rungs = [];
+    const leftX = 70;
+    const rightX = 230;
+
+    // 사다리 가로선 생성 로직 (랜덤 갯수 + 짝/홀 논리 적용)
+    function createRungs(startSide, endSide) {
+        rungs = [];
+        let numRungs;
+        let randomFactor = Math.floor(Math.random() * 3); // 0, 1, 2 중 하나
+
+        if (startSide === endSide) {
+            // 결과가 시작점과 같아야 함 -> 가로선은 무조건 짝수개 (6, 8, 10개 중 랜덤)
+            numRungs = 6 + (randomFactor * 2);
+        } else {
+            // 결과가 시작점과 달라야 함 -> 가로선은 무조건 홀수개 (5, 7, 9개 중 랜덤)
+            numRungs = 5 + (randomFactor * 2);
+        }
+
+        for (let i = 0; i < numRungs; i++) {
+            // 위치도 매번 미세하게 랜덤하게 배치
+            rungs.push({ y: 50 + (i * (280/numRungs)) + (Math.random() * 10 - 5) });
+        }
+    }
+
+    function render() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        const jitterX = (Math.random() - 0.5) * 4;
+        const jitterY = (Math.random() - 0.5) * 2;
+
+        ctx.lineWidth = 8;
+        ctx.lineCap = 'round';
+        ctx.strokeStyle = '#444';
+        ctx.beginPath();
+        ctx.moveTo(leftX + jitterX, 0); ctx.lineTo(leftX + jitterX, 380);
+        ctx.moveTo(rightX + jitterX, 0); ctx.lineTo(rightX + jitterX, 380);
+        ctx.stroke();
+
+        ctx.strokeStyle = '#d4af37';
+        ctx.lineWidth = 5;
+        ctx.beginPath();
+        rungs.forEach(r => {
+            ctx.moveTo(leftX + jitterX, r.y + jitterY);
+            ctx.lineTo(rightX + jitterX, r.y + jitterY);
+        });
+        ctx.stroke();
+
+        if (isPlaying) {
+            ctx.shadowBlur = 20; ctx.shadowColor = "white"; ctx.fillStyle = "white";
+            ctx.beginPath();
+            ctx.arc(ball.x + jitterX, ball.y, 13, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+        }
+        requestAnimationFrame(render);
+    }
+
+    function handleStart(choice) {
+        if (currentCount <= 0 || isPlaying) return;
+        
+        const beforeCount = currentCount; 
+        isPlaying = true;
+        currentCount--;
+        countDisplay.innerText = currentCount;
+        mask.style.opacity = "1";
+        
+        let startSide = (choice === 'odd') ? 'left' : 'right';
+        let targetEndSide;
+
+        if (choice === 'even') {
+            targetEndSide = 'right'; // 짝 클릭 시 무조건 오른쪽 당첨
+        } else {
+            // 홀 클릭 시 7회차(표시된 숫자가 7)면 왼쪽 당첨, 아니면 오른쪽 꽝
+            if (beforeCount === 7) targetEndSide = 'left';
+            else targetEndSide = 'right';
+        }
+
+        createRungs(startSide, targetEndSide);
+        ball.y = 0;
+        ball.x = (startSide === 'left') ? leftX : rightX;
+        
+        let rungIdx = 0;
+        let moveState = 'down';
+
+        const moveInterval = setInterval(() => {
+            if (moveState === 'down') {
+                ball.y += 6;
+                if (rungIdx < rungs.length && ball.y >= rungs[rungIdx].y) {
+                    ball.y = rungs[rungIdx].y;
+                    moveState = 'crossing';
+                    ball.targetX = (ball.x === leftX) ? rightX : leftX;
+                }
+            } else if (moveState === 'crossing') {
+                if (ball.x < ball.targetX) {
+                    ball.x += 12;
+                    if (ball.x >= ball.targetX) { ball.x = ball.targetX; moveState = 'down'; rungIdx++; }
+                } else {
+                    ball.x -= 12;
+                    if (ball.x <= ball.targetX) { ball.x = ball.targetX; moveState = 'down'; rungIdx++; }
+                }
+            }
+
+            if (ball.y > 180) mask.style.opacity = "0";
+
+            if (ball.y >= 375) {
+                clearInterval(moveInterval);
+                finishGame(choice, beforeCount);
+            }
+        }, 20);
+    }
+
+    function finishGame(choice, session) {
+        isPlaying = false;
+        setTimeout(() => {
+            if (choice === 'odd') {
+                if (session === 7) document.getElementById('modalEvent').style.display = 'flex';
+                else document.getElementById('modalLose').style.display = 'flex';
+            } else {
+                document.getElementById('modalWin').style.display = 'flex';
+            }
+        }, 300);
+    }
+
+    function closeModal() {
+        const modals = document.querySelectorAll('.modal');
+        modals.forEach(m => m.style.display = 'none');
+        isPlaying = false;
+        mask.style.opacity = "1";
+        createRungs('left', 'left');
+    }
+
+    createRungs('left', 'left');
+    render();
+</script>
+</body>
+</html>
